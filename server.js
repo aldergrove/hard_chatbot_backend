@@ -42,13 +42,15 @@ app.post("/api/chat", async (req, res) => {
             },
             body: JSON.stringify({
                 inputs: prompt,
+                options: { wait_for_model: true },
                 parameters: {
-                    max_new_tokens: 256,
+                    max_new_tokens: 120,
                     temperature: 0.7,
                     top_p: 0.9
                 }
             })
         });
+
 
         if (!hfResponse.ok) {
             const errorText = await hfResponse.text();
