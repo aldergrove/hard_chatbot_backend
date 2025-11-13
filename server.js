@@ -32,7 +32,7 @@ app.post("/api/chat", async (req, res) => {
             "User: " + userMessage + "\n" +
             "Assistant:";
 
-        const apiUrl = `https://api-inference.huggingface.co/models/${MODEL_ID}`;
+        const apiUrl = `https://router.huggingface.co/hf-inference/models/${MODEL_ID}`;
 
         const hfResponse = await fetch(apiUrl, {
             method: "POST",
