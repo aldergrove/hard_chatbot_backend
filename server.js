@@ -6,7 +6,7 @@ import cors from "cors";
 // HF_TOKEN = Hugging Face access token
 // MODEL_ID = valittu malli, esim. "google/gemma-2-2b-it"
 const HF_TOKEN = process.env.HF_TOKEN;
-const MODEL_ID = process.env.MODEL_ID || "tiiuae/falcon-7b-instruct";
+const MODEL_ID = process.env.MODEL_ID || "HuggingFaceH4/zephyr-7b-beta";
 
 if (!HF_TOKEN) {
     console.error("Puuttuva HF_TOKEN. Aseta Hugging Face -token ympäristömuuttujaan.");
