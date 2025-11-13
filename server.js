@@ -2,11 +2,11 @@
 import express from "express";
 import cors from "cors";
 
-const HF_TOKEN = process.env.HF_TOKEN;
-const MODEL_ID = process.env.MODEL_ID || "google/gemma-2-2b-it";
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
-if (!HF_TOKEN) {
-    console.error("Puuttuva HF_TOKEN. Aseta Hugging Face -token ympäristömuuttujaan.");
+if (!GROQ_API_KEY) {
+    console.error("Puuttuva GROQ_API_KEY. Aseta Groq API -avain ympäristömuuttujaan.");
     process.exit(1);
 }
 
@@ -22,48 +22,47 @@ app.post("/api/chat", async (req, res) => {
             return res.status(400).json({ error: "message puuttuu" });
         }
 
-        const prompt =
-            "You are a helpful Finnish customer support chatbot called hard_chatbot. " +
-            "Answer clearly and politely.\n\n" +
-            "User: " + userMessage + "\n" +
-            "Assistant:";
-
-        const apiUrl = `https://router.huggingface.co/hf-inference/models/${MODEL_ID}`;
-
-        const hfResponse = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${HF_TOKEN}`,
-                "Content-Type": "application/json"
+        const messages = [
+            {
+                role: "system",
+                content:
+                    "You are a helpful Finnish customer support chatbot called hard_chatbot. " +
+                    "Answer clearly, concisely and politely in Finnish."
             },
-            body: JSON.stringify({
-                inputs: prompt,
-                options: { wait_for_model: true },
-                parameters: {
-                    max_new_tokens: 150,
-                    temperature: 0.7
-                }
-            })
-        });
+            {
+                role: "user",
+                content: userMessage
+            }
+        ];
 
-        if (!hfResponse.ok) {
-            const errorText = await hfResponse.text();
-            console.error("HF API -virhe:", errorText);
+        const response = await fetch(
+            "https://api.groq.com/openai/v1/chat/completions",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${GROQ_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: GROQ_MODEL,
+                    messages,
+                    max_tokens: 300,
+                    temperature: 0.7
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const txt = await response.text();
+            console.error("Groq API -virhe:", txt);
             return res.status(500).json({ error: "AI-kutsu epäonnistui" });
         }
 
-        const result = await hfResponse.json();
+        const data = await response.json();
 
-        let fullText = "";
-        if (Array.isArray(result) && result[0]?.generated_text) {
-            fullText = result[0].generated_text;
-        } else {
-            console.error("Yllättävä HF-vastaus:", result);
-            return res.status(500).json({ error: "AI-vastausta ei voitu tulkita" });
-        }
-
-        let reply = fullText.split("Assistant:").pop().trim();
-        if (!reply) reply = fullText.trim();
+        const reply =
+            data.choices?.[0]?.message?.content?.trim() ||
+            "En saanut vastausta AI-mallilta.";
 
         res.json({ reply });
     } catch (err) {
